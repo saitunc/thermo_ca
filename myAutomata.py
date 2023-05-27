@@ -125,13 +125,14 @@ class automata:
             S= np.inf
             A = 0
 
-
-        
-
-
         return [E,T_a,C,S,A,Z]
     
     
+    def write_to_class(self,class1,B,D,cls):
+        class1.loc[len(class1.index)] = [f'B:{B} D: {D}',f'{cls}']
+        class1.to_csv(f'{boundary}_{self.w}x{self.h}/benchmark.csv',index=False)
+
+
     
     def to_ideal(self):
         curr_mat = self.state_matrix
@@ -145,9 +146,9 @@ class automata:
         S = self.N*np.log(E)
         A = E - E*np.log(E)
         P = T_a*np.log(E)
+
         return [E,T_a,C,S,A,P]
     
-
 
 
 
@@ -155,7 +156,7 @@ class automata:
 if __name__ == "__main__":
     
     ruleset = pd.read_csv('rulelist.csv')
-    r = [['closed',100],['periodic',100],['closed',400],['peridoic',400]]
+    r = [['closed',400],['peridoic',400]]
     for k,j in r:
         w=j
         h=j
@@ -173,16 +174,21 @@ if __name__ == "__main__":
         del A
 
         # For storing benchmark, ideal gas and partition function values of E,T,C,S,A,P. i=0 is for benchmark, i=1 is for parittion function and i=2 is for ideal gas. i stands for rows of E[i][j]
-        rows, cols = (3, 100)
-        E = [[0]*cols]*rows
-        T = [[0]*cols]*rows
-        C = [[0]*cols]*rows
-        S = [[0]*cols]*rows
-        A = [[0]*cols]*rows
-        P = [[0]*cols]*rows
-        Z = [0]*cols # It is only in partition function approach.
-                
+       
+        benchmark = pd.read_csv(f'{boundary}_{str(w)}x{str(h)}/benchmark.csv')
+        partit = pd.read_csv(f'{boundary}_{str(w)}x{str(h)}/partition.csv')
+        ideal = pd.read_csv(f'{boundary}_{str(w)}x{str(h)}/ideal_gas.csv')
+        class1= pd.read_csv(f'{boundary}_{str(w)}x{str(h)}/classes.csv')
         for i in range(ruleset.__len__()):
+            rows, cols = (3, 100)
+            E = [[0]*cols]*rows
+            T = [[0]*cols]*rows
+            C = [[0]*cols]*rows
+            S = [[0]*cols]*rows
+            A = [[0]*cols]*rows
+            P = [[0]*cols]*rows
+            Z = [0]*cols # It is only in partition function approach.
+            
             rules = (ruleset["B"][i],ruleset["D"][i])
             automata1 =  automata(w,h,rules,boundary,stateMatrix)
 
@@ -192,6 +198,7 @@ if __name__ == "__main__":
                 values = automata1.evolve_system(boundary)
 
                 if(values[2]==w*h):
+                    automata1.write_to_class(class1,B,D,'Class E')
                     break
                 
                 difference = np.sum(np.abs(values[1]-values[0]))      
@@ -199,23 +206,21 @@ if __name__ == "__main__":
                 E[0][t],T[0][t],C[0][t],S[0][t],A[0][t],P[0][t] = automata1.to_benchmark()
                 E[1][t],T[1][t],C[1][t],S[1][t],A[1][t],Z[t] = automata1.to_partition(difference)
                 E[2][t],T[2][t],C[2][t],S[2][t],A[2][t],P[2][t] = automata1.to_ideal()
-            
+                
+                
+                print(i)
         
                        
-            benchmark = pd.read_csv(f'{boundary}_{str(w)}x{str(h)}/benchmark.csv')
+            
             benchmark.loc[len(benchmark.index)] = [f'B:{B} D: {D}',E[0],T[0],C[0],S[0],A[0],P[0]]
-            benchmark.to_csv(f'{boundary}_{str(w)}x{str(h)}/benchmark.csv',index=False)
 
-
-            partit = pd.read_csv(f'{boundary}_{str(w)}x{str(h)}/partition.csv')
             partit.loc[len(partit.index)]=[f'B:{B} D: {D}',E[1],T[1],C[1],S[1],A[1],Z]
-            partit.to_csv(f'{boundary}_{str(w)}x{str(h)}/partition.csv',index=False)
-
-            ideal = pd.read_csv(f'{boundary}_{str(w)}x{str(h)}/ideal_gas.csv')
+            
             ideal.loc[len(ideal.index)]=[f'B:{B} D: {D}',E[2],T[2],C[2],S[2],A[2],P[2]]
-            ideal.to_csv(f'{boundary}_{str(w)}x{str(h)}/ideal_gas.csv',index=False)
+            
 
+        benchmark.to_csv(f'{boundary}_{str(w)}x{str(h)}/benchmark.csv',index=False)
+        partit.to_csv(f'{boundary}_{str(w)}x{str(h)}/partition.csv',index=False)
+        ideal.to_csv(f'{boundary}_{str(w)}x{str(h)}/ideal_gas.csv',index=False)
         
-        
-
         
